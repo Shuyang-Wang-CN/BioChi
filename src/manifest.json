@@ -1,0 +1,63 @@
+{
+  "manifest_version": 3,
+  "name": "BioChi - 仿生阅读",
+  "version": "1.0.0",
+  "description": "基于Jieba中文分词的仿生阅读Chrome扩展，提升中英文阅读体验",
+  
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "BioChi Settings",
+    "default_icon": "icons/512.png"
+  },
+  
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+
+  "icons": {
+    "512": "icons/512.png"
+  },
+  
+  "commands": {
+    "toggle_biochi": {
+      "description": "启用/禁用 BioChi 仿生阅读",
+      "suggested_key": {
+        "default": "Alt+Shift+B",
+        "mac": "Alt+Shift+B",
+        "windows": "Alt+Shift+B",
+        "chromeos": "Alt+Shift+B",
+        "linux": "Alt+Shift+B"
+      }
+    }
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "type": "module",
+      "run_at": "document_end"
+    }
+  ],
+  
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "segment-wrapper.js",
+        "libs/jieba/jieba_wasm.js",
+        "libs/jieba/jieba_wasm_bg.wasm"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
