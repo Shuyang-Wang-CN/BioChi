@@ -33,11 +33,14 @@ class BionicReader {
       await this.loadSettings();
 
       // 监听popup/background消息
-      chrome.runtime.onMessage.addListener((req: ChromeMessage) => {
+      chrome.runtime.onMessage.addListener((req: ChromeMessage, sender, sendResponse) => {
         if (req.action === 'applyBionicReading' && req.settings) {
           this.settings = { ...this.settings, ...req.settings };
           this.applyBionicReading();
+          // 发送响应确认消息已处理
+          sendResponse({ success: true });
         }
+        return true; // 保持消息通道开放
       });
 
       // 设置就绪后观察DOM变化

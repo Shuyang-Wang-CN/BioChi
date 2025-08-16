@@ -128,22 +128,52 @@ class PopupController {
       console.log('[BioChi Popup] 设置已保存', this.settings);
     });
 
-    // 发送消息到content script（回调式，兼容 Safari）
+    // 发送消息到content script
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const activeTab = tabs[0];
-      if (activeTab?.id) {
-        const message: ChromeMessage = {
-          action: 'applyBionicReading',
-          settings: this.settings
-        };
-
-        chrome.tabs.sendMessage(activeTab.id, message, () => {
-          const err = chrome.runtime.lastError;
-          if (err) {
-            console.warn('[BioChi Popup] 发送消息失败', err.message);
-          }
-        });
+      if (!activeTab?.id) {
+        console.warn('[BioChi Popup] 没有找到活动标签页');
+        return;
       }
+
+      // 检查是否是受限页面
+      const restrictedUrls = [
+        'chrome://',
+        'chrome-extension://',
+        'moz-extension://',
+        'about:',
+        'edge://',
+        'opera://'
+      ];
+
+      const isRestrictedPage = restrictedUrls.some(prefix => 
+        activeTab.url?.startsWith(prefix)
+      );
+
+      if (isRestrictedPage) {
+        console.log('[BioChi Popup] 当前页面不支持内容脚本注入:', activeTab.url);
+        return;
+      }
+
+      const message: ChromeMessage = {
+        action: 'applyBionicReading',
+        settings: this.settings
+      };
+
+      // 发送消息并处理错误
+      chrome.tabs.sendMessage(activeTab.id, message, (response) => {
+        const err = chrome.runtime.lastError;
+        if (err) {
+          // 常见错误，不需要警告
+          if (err.message.includes('Could not establish connection')) {
+            console.log('[BioChi Popup] 内容脚本尚未准备就绪，设置已保存到storage');
+          } else {
+            console.warn('[BioChi Popup] 发送消息失败:', err.message);
+          }
+        } else {
+          console.log('[BioChi Popup] 消息发送成功');
+        }
+      });
     });
   }
 }
