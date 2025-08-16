@@ -154,28 +154,6 @@ npm run package  # 清理 + 构建 + 压缩为zip
 4. 点击"加载已解压的扩展程序"
 5. 选择项目的 `dist` 目录
 
-### 内容脚本 (content.ts)
-- **BionicReader类**: 核心仿生阅读逻辑，支持中英文混合处理
-- **语言检测**: 自动识别中文、英文、混合文本类型
-- **DOM处理**: 智能遍历Text节点，动态应用样式，避免重复处理
-- **性能优化**: requestIdleCallback避免阻塞，MutationObserver监听变化
-- **降级处理**: WASM加载失败时自动降级到逐字/逐词模式
-
-### 分词模块 (segment-wrapper.ts)
-- **WASM加载**: 异步加载Jieba WebAssembly模块，支持模块复用
-- **错误处理**: 分词失败时降级到逐字模式，确保功能可用
-- **类型安全**: 完整的TypeScript类型定义和接口约束
-
-### 弹窗界面 (popup.ts)
-- **设置管理**: Chrome storage同步，支持实时保存
-- **实时通信**: 与content script消息传递，立即应用设置
-- **响应式UI**: 渐变背景的现代化界面，滑块和开关控件
-- **快捷键显示**: 动态检测和显示当前快捷键设置
-
-### 后台脚本 (background.ts)
-- **Service Worker**: Manifest V3兼容的后台处理
-- **快捷键管理**: Commands API支持，可自定义快捷键组合
-- **设置同步**: 提供统一的设置读写接口
 
 ## 📄 许可证
 
