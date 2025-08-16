@@ -32,11 +32,11 @@
     "toggle_biochi": {
       "description": "启用/禁用 BioChi 仿生阅读",
       "suggested_key": {
-        "default": "Alt+Shift+B",
-        "mac": "Alt+Shift+B",
-        "windows": "Alt+Shift+B",
-        "chromeos": "Alt+Shift+B",
-        "linux": "Alt+Shift+B"
+        "default": "Alt+Shift+R",
+        "mac": "Alt+Shift+R",
+        "windows": "Alt+Shift+R",
+        "chromeos": "Alt+Shift+R",
+        "linux": "Alt+Shift+R"
       }
     }
   },

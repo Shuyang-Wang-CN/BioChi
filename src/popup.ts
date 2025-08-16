@@ -19,7 +19,7 @@ class PopupController {
   private async init(): Promise<void> {
     try {
       await this.loadSettings();
-      await this.renderShortcut();
+      this.renderShortcut();
       this.setupEventListeners();
       this.updateUI();
       console.log('[BioChi Popup] 初始化完成');
@@ -100,28 +100,26 @@ class PopupController {
     if (enlargeToggle) enlargeToggle.checked = this.settings.boldEnlarge;
   }
 
-  private async renderShortcut(): Promise<void> {
+  private renderShortcut(): void {
     const shortcutSpan = document.getElementById('shortcutValue') as HTMLSpanElement | null;
     if (!shortcutSpan) return;
 
-    try {
-      const platformInfo = await chrome.runtime.getPlatformInfo();
-      const commands = await chrome.commands.getAll();
-      const toggle = commands.find((c) => c.name === 'toggle_biochi');
-
-      // 直接显示 Chrome 解析后的 shortcut。如果为空则根据平台给出建议值
-      if (toggle?.shortcut) {
-        shortcutSpan.textContent = toggle.shortcut;
-        return;
-      }
-
-      // 回退：根据平台给默认建议
-      const isMac = platformInfo.os === 'mac';
-      const human = isMac ? '⌥⇧B' : 'Alt+Shift+B';
-      shortcutSpan.textContent = `${human}（可在“设置快捷键”中修改）`;
-    } catch (e) {
-      shortcutSpan.textContent = '无法获取快捷键信息';
-    }
+    chrome.runtime.getPlatformInfo((platformInfo) => {
+      chrome.commands.getAll((commands) => {
+        try {
+          const toggle = commands.find((c) => c.name === 'toggle_biochi');
+          if (toggle?.shortcut) {
+            shortcutSpan.textContent = toggle.shortcut;
+            return;
+          }
+          const isMac = platformInfo.os === 'mac';
+          const human = isMac ? '⌥⇧R' : 'Alt+Shift+R';
+          shortcutSpan.textContent = `${human}（可在“设置快捷键”中修改）`;
+        } catch (e) {
+          shortcutSpan.textContent = '无法获取快捷键信息';
+        }
+      });
+    });
   }
 
   private saveAndApply(): void {
@@ -130,7 +128,7 @@ class PopupController {
       console.log('[BioChi Popup] 设置已保存', this.settings);
     });
 
-    // 发送消息到content script
+    // 发送消息到content script（回调式，兼容 Safari）
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const activeTab = tabs[0];
       if (activeTab?.id) {
@@ -138,9 +136,12 @@ class PopupController {
           action: 'applyBionicReading',
           settings: this.settings
         };
-        
-        chrome.tabs.sendMessage(activeTab.id, message).catch((error) => {
-          console.warn('[BioChi Popup] 发送消息失败', error);
+
+        chrome.tabs.sendMessage(activeTab.id, message, () => {
+          const err = chrome.runtime.lastError;
+          if (err) {
+            console.warn('[BioChi Popup] 发送消息失败', err.message);
+          }
         });
       }
     });
