@@ -5,7 +5,6 @@
   
   **基于Jieba中文分词的现代化仿生阅读Chrome扩展**
   
-  *使用TypeScript + esbuild构建，支持Chrome扩展Manifest V3*
 </div>
 
 
