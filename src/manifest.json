@@ -6,12 +6,11 @@
   
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "scripting"
   ],
   
-  "host_permissions": [
-    "<all_urls>"
-  ],
+
   
   "action": {
     "default_popup": "popup.html",
@@ -41,14 +40,7 @@
     }
   },
   
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "type": "module",
-      "run_at": "document_end"
-    }
-  ],
+
   
   "web_accessible_resources": [
     {
@@ -57,7 +49,7 @@
         "libs/jieba/jieba_wasm.js",
         "libs/jieba/jieba_wasm_bg.wasm"
       ],
-      "matches": ["<all_urls>"]
+      "matches": ["https://*/*", "http://*/*"]
     }
   ]
 }

@@ -23,30 +23,41 @@ async function setSettings(next: Partial<BiochiSettings>): Promise<void> {
   });
 }
 
-function sendApplyMessageToActiveTab(settings: BiochiSettings): void {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const activeTab = tabs[0];
-    if (!activeTab?.id) return;
+async function injectAndApplyToActiveTab(settings: BiochiSettings): Promise<void> {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  const activeTab = tabs[0];
+  if (!activeTab?.id) return;
 
-    // 检查是否是受限页面
-    const restrictedUrls = [
-      'chrome://',
-      'chrome-extension://',
-      'moz-extension://',
-      'about:',
-      'edge://',
-      'opera://'
-    ];
+  // 检查是否是受限页面
+  const restrictedUrls = [
+    'chrome://',
+    'chrome-extension://',
+    'moz-extension://',
+    'about:',
+    'edge://',
+    'opera://'
+  ];
 
-    const isRestrictedPage = restrictedUrls.some(prefix => 
-      activeTab.url?.startsWith(prefix)
-    );
+  const isRestrictedPage = restrictedUrls.some(prefix => 
+    activeTab.url?.startsWith(prefix)
+  );
 
-    if (isRestrictedPage) {
-      console.log('[BioChi Background] 当前页面不支持内容脚本注入:', activeTab.url);
-      return;
-    }
+  if (isRestrictedPage) {
+    console.log('[BioChi Background] 当前页面不支持内容脚本注入:', activeTab.url);
+    return;
+  }
 
+  try {
+    // 首先尝试注入内容脚本
+    await chrome.scripting.executeScript({
+      target: { tabId: activeTab.id },
+      files: ['content.js']
+    });
+
+    // 等待脚本加载
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // 发送应用设置的消息
     const message: ChromeMessage = {
       action: 'applyBionicReading',
       settings,
@@ -58,7 +69,9 @@ function sendApplyMessageToActiveTab(settings: BiochiSettings): void {
         console.warn('[BioChi Background] 发送消息失败:', err.message);
       }
     });
-  });
+  } catch (error) {
+    console.warn('[BioChi Background] 脚本注入失败:', error);
+  }
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -70,7 +83,7 @@ chrome.commands.onCommand.addListener(async (command) => {
   const current = await getSettings();
   const next: BiochiSettings = { ...current, enableBionic: !current.enableBionic };
   await setSettings(next);
-  sendApplyMessageToActiveTab(next);
+  await injectAndApplyToActiveTab(next);
 });
 
 

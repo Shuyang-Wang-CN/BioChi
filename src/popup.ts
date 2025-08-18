@@ -122,45 +122,55 @@ class PopupController {
     });
   }
 
-  private saveAndApply(): void {
+  private async saveAndApply(): Promise<void> {
     // 保存设置到storage
     chrome.storage.sync.set(this.settings, () => {
       console.log('[BioChi Popup] 设置已保存', this.settings);
     });
 
-    // 发送消息到content script
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const activeTab = tabs[0];
-      if (!activeTab?.id) {
-        console.warn('[BioChi Popup] 没有找到活动标签页');
-        return;
-      }
+    // 获取活动标签页并注入脚本
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const activeTab = tabs[0];
+    if (!activeTab?.id) {
+      console.warn('[BioChi Popup] 没有找到活动标签页');
+      return;
+    }
 
-      // 检查是否是受限页面
-      const restrictedUrls = [
-        'chrome://',
-        'chrome-extension://',
-        'moz-extension://',
-        'about:',
-        'edge://',
-        'opera://'
-      ];
+    // 检查是否是受限页面
+    const restrictedUrls = [
+      'chrome://',
+      'chrome-extension://',
+      'moz-extension://',
+      'about:',
+      'edge://',
+      'opera://'
+    ];
 
-      const isRestrictedPage = restrictedUrls.some(prefix => 
-        activeTab.url?.startsWith(prefix)
-      );
+    const isRestrictedPage = restrictedUrls.some(prefix => 
+      activeTab.url?.startsWith(prefix)
+    );
 
-      if (isRestrictedPage) {
-        console.log('[BioChi Popup] 当前页面不支持内容脚本注入:', activeTab.url);
-        return;
-      }
+    if (isRestrictedPage) {
+      console.log('[BioChi Popup] 当前页面不支持内容脚本注入:', activeTab.url);
+      return;
+    }
 
+    try {
+      // 首先尝试注入内容脚本
+      await chrome.scripting.executeScript({
+        target: { tabId: activeTab.id },
+        files: ['content.js']
+      });
+
+      // 等待脚本加载
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // 发送应用设置的消息
       const message: ChromeMessage = {
         action: 'applyBionicReading',
         settings: this.settings
       };
 
-      // 发送消息并处理错误
       chrome.tabs.sendMessage(activeTab.id, message, (response) => {
         const err = chrome.runtime.lastError;
         if (err) {
@@ -174,7 +184,9 @@ class PopupController {
           console.log('[BioChi Popup] 消息发送成功');
         }
       });
-    });
+    } catch (error) {
+      console.warn('[BioChi Popup] 脚本注入失败:', error);
+    }
   }
 }
 
